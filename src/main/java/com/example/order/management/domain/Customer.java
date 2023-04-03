@@ -1,4 +1,4 @@
-package com.example.order.management.service.dto;
+package com.example.order.management.domain;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,7 +9,7 @@ public class Customer {
 
     private String id;
 
-    private String firstname;
+    private String firstName;
 
-    private String lastname;
+    private String lastName;
 }

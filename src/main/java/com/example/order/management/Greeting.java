@@ -1,4 +1,4 @@
-package com.example.order.management.service;
+package com.example.order.management;
 
 public class Greeting {
 

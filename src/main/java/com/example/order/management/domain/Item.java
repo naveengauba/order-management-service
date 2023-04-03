@@ -1,4 +1,4 @@
-package com.example.order.management.service.dto;
+package com.example.order.management.domain;
 
 import lombok.Builder;
 import lombok.Data;
