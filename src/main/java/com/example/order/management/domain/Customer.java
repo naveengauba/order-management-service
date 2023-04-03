@@ -1,10 +1,12 @@
 package com.example.order.management.domain;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Builder
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class Customer {
 
     private String id;

@@ -1,10 +1,11 @@
 package com.example.order.management.domain;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 @Data
-@Builder
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class Item {
     private String id;
 
