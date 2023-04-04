@@ -1,5 +1,7 @@
 package com.example.order.management;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -7,8 +9,8 @@ import com.example.order.management.domain.Customer;
 import com.example.order.management.domain.Item;
 import com.example.order.management.domain.Order;
 import com.example.order.management.service.OrderManagementService;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -19,7 +21,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-//  We create a `@SpringBootTest`, starting an actual server on a `RANDOM_PORT`
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient(timeout = "60000")
 public class OrderManagementRouterTest {
@@ -33,6 +34,7 @@ public class OrderManagementRouterTest {
 
         Order mockOrder = validOrder();
         when(service.saveOrder(mockOrder)).thenReturn(Mono.just(mockOrder));
+
         webTestClient
                 .post()
                 .uri("/orders")
@@ -44,13 +46,16 @@ public class OrderManagementRouterTest {
                 .isOk()
                 .expectBody(Order.class)
                 .isEqualTo(mockOrder);
+
+        verify(service).saveOrder(any(Order.class));
     }
 
     @Test
-    public void createOrderFailsOrderCreationWhenNoItemsAreSupplied() {
+    public void createOrderFailsOrderCreationWhenEmptyItemsAreSupplied() {
 
         Order orderWithNoItems = invalidOrderWithNoItems();
         when(service.saveOrder(orderWithNoItems)).thenReturn(Mono.just(orderWithNoItems));
+
         webTestClient
                 .post()
                 .uri("/orders")
@@ -68,6 +73,7 @@ public class OrderManagementRouterTest {
         Order orderWithItemHavingInvalidQuantity = invalidOrderWithItemHavingInvalidQuantity();
         when(service.saveOrder(orderWithItemHavingInvalidQuantity))
                 .thenReturn(Mono.just(orderWithItemHavingInvalidQuantity));
+
         webTestClient
                 .post()
                 .uri("/orders")
@@ -83,7 +89,7 @@ public class OrderManagementRouterTest {
     public void getOrderCorrectlyReturnsOrderById() {
 
         Order mockOrder = validOrder();
-        when(service.findById("1")).thenReturn(Mono.just(mockOrder));
+        when(service.findById(anyString())).thenReturn(Mono.just(mockOrder));
 
         webTestClient
                 .get()
@@ -95,7 +101,63 @@ public class OrderManagementRouterTest {
                 .expectBody(Order.class)
                 .isEqualTo(mockOrder);
 
-        verify(service).findById("1");
+        verify(service).findById(anyString());
+    }
+
+    @Test
+    public void getOrderErrorsOutWhenEmptyOrderIdIsSupplied() {
+
+        webTestClient
+                .get()
+                .uri("/orders/" + "")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    public void getOrderErrorsOutWhenInvalidOrderIdIsSupplied() {
+
+        when(service.findById(anyString())).thenReturn(Mono.empty());
+
+        webTestClient
+                .get()
+                .uri("/orders/" + "invalid")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+
+        verify(service).findById(anyString());
+    }
+
+    @Test
+    public void deleteOrderErrorsOutWhenEmptyOrderIdIsSupplied() {
+
+        webTestClient
+                .delete()
+                .uri("/orders/" + " ")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+    }
+
+    @Test
+    public void deleteOrderIsSuccessfulWhenValidOrderIdIsSupplied() {
+
+        when(service.deleteById(anyString())).thenReturn(Mono.empty());
+
+        webTestClient
+                .delete()
+                .uri("/orders/" + "validOrder")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isOk();
+
+        verify(service).deleteById(anyString());
     }
 
     @Test
@@ -112,6 +174,8 @@ public class OrderManagementRouterTest {
                 .isOk()
                 .expectBodyList(Order.class)
                 .contains(mockOrder);
+
+        verify(service).findAll();
     }
 
     private Order validOrder() {
@@ -122,7 +186,7 @@ public class OrderManagementRouterTest {
     }
 
     private Order invalidOrderWithNoItems() {
-        return new Order("1", mockCustomer(), Collections.EMPTY_LIST);
+        return new Order("1", mockCustomer(), new ArrayList<Item>());
     }
 
     private Order invalidOrderWithItemHavingInvalidQuantity() {

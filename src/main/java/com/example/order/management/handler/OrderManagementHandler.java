@@ -5,6 +5,7 @@ import static org.springframework.web.reactive.function.server.ServerResponse.ok
 
 import com.example.order.management.domain.Order;
 import com.example.order.management.service.OrderManagementService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -30,9 +31,14 @@ public class OrderManagementHandler {
 
     public Mono<ServerResponse> getOne(ServerRequest request) {
         String id = request.pathVariable("id");
+        if (StringUtils.isBlank(id)) {
+            return Mono.error(
+                    new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Order Id"));
+        }
         return service.findById(id)
                 .flatMap(order -> ok().contentType(APPLICATION_JSON).bodyValue(order))
-                .switchIfEmpty(ServerResponse.notFound().build());
+                .switchIfEmpty(
+                        ServerResponse.status(HttpStatus.NOT_FOUND).bodyValue("Order not found."));
     }
 
     public Mono<ServerResponse> getMany(ServerRequest serverRequest) {
@@ -62,5 +68,15 @@ public class OrderManagementHandler {
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(responseBody, Order.class);
+    }
+
+    public Mono<ServerResponse> deleteOne(ServerRequest request) {
+        String id = request.pathVariable("id");
+        if (StringUtils.isBlank(id)) {
+            return Mono.error(
+                    new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Order Id"));
+        }
+        return service.deleteById(id)
+                .flatMap(s -> ok().contentType(MediaType.TEXT_PLAIN).bodyValue("Success"));
     }
 }

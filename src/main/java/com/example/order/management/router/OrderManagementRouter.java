@@ -1,9 +1,6 @@
 package com.example.order.management.router;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
-import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
 import com.example.order.management.domain.Order;
 import com.example.order.management.handler.OrderManagementHandler;
@@ -47,7 +44,10 @@ public class OrderManagementRouter {
                                                                     @Schema(
                                                                             implementation =
                                                                                     Order.class))),
-                                    @ApiResponse(responseCode = "404", description = "Note found")
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "Invalid data supplied"),
+                                    @ApiResponse(responseCode = "404", description = "Not found")
                                 })),
         @RouterOperation(
                 path = "/orders",
@@ -91,6 +91,23 @@ public class OrderManagementRouter {
                                     @ApiResponse(
                                             responseCode = "500",
                                             description = "Internal Server Error")
+                                })),
+        @RouterOperation(
+                path = "/orders/{id}",
+                method = RequestMethod.DELETE,
+                produces = {MediaType.APPLICATION_JSON_VALUE},
+                beanClass = OrderManagementHandler.class,
+                beanMethod = "deleteOne",
+                operation =
+                        @Operation(
+                                operationId = "deleteOne",
+                                parameters = {@Parameter(in = ParameterIn.PATH, name = "id")},
+                                responses = {
+                                    @ApiResponse(responseCode = "200"),
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "Invalid data supplied"),
+                                    @ApiResponse(responseCode = "404", description = "Not found")
                                 }))
     })
     @Bean
@@ -106,6 +123,9 @@ public class OrderManagementRouter {
                         POST("/orders")
                                 .and(accept(MediaType.APPLICATION_JSON))
                                 .and(contentType(MediaType.APPLICATION_JSON)),
-                        orderManagementHandler::createOne);
+                        orderManagementHandler::createOne)
+                .andRoute(
+                        DELETE("/orders/{id}").and(accept(MediaType.APPLICATION_JSON)),
+                        orderManagementHandler::deleteOne);
     }
 }
