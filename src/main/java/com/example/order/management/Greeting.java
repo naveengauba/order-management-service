@@ -4,8 +4,7 @@ public class Greeting {
 
     private String message;
 
-    public Greeting() {
-    }
+    public Greeting() {}
 
     public Greeting(String message) {
         this.message = message;
@@ -21,8 +20,6 @@ public class Greeting {
 
     @Override
     public String toString() {
-        return "Greeting{" +
-                "message='" + message + '\'' +
-                '}';
+        return "Greeting{" + "message='" + message + '\'' + '}';
     }
 }

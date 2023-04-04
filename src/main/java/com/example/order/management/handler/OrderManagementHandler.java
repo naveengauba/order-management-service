@@ -1,32 +1,31 @@
 package com.example.order.management.handler;
 
-import com.example.order.management.Greeting;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.web.reactive.function.server.ServerResponse.ok;
+
 import com.example.order.management.domain.Order;
 import com.example.order.management.service.OrderManagementService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.*;
 
 @Component
 public class OrderManagementHandler {
 
     private final OrderManagementService service;
+    private final OrderValidator validator;
 
-    public OrderManagementHandler(OrderManagementService service) {
+    public OrderManagementHandler(OrderManagementService service, OrderValidator validator) {
         this.service = service;
-    }
-
-    public Mono<ServerResponse> hello(ServerRequest request) {
-        return ok().contentType(APPLICATION_JSON)
-                .body(BodyInserters.fromValue(new Greeting("Hello, Spring!")));
+        this.validator = validator;
     }
 
     public Mono<ServerResponse> getOne(ServerRequest request) {
@@ -42,10 +41,26 @@ public class OrderManagementHandler {
     }
 
     public Mono<ServerResponse> createOne(ServerRequest serverRequest) {
-        return serverRequest.bodyToMono(Order.class)
-                .flatMap(service::saveOrder)
-                .flatMap(p -> ok().contentType(APPLICATION_JSON).bodyValue(p))
-                .doOnError(ex -> ServerResponse.status(HttpStatus.BAD_REQUEST).contentType(APPLICATION_JSON));
+        Validator validator = new OrderValidator();
+        Mono<Order> responseBody =
+                serverRequest
+                        .bodyToMono(Order.class)
+                        .flatMap(
+                                body -> {
+                                    Errors errors =
+                                            new BeanPropertyBindingResult(
+                                                    body, Order.class.getName());
+                                    validator.validate(body, errors);
+                                    if (errors == null || errors.getAllErrors().isEmpty()) {
+                                        return service.saveOrder(body);
+                                    } else {
+                                        throw new ResponseStatusException(
+                                                HttpStatus.BAD_REQUEST,
+                                                errors.getAllErrors().toString());
+                                    }
+                                });
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(responseBody, Order.class);
     }
-
 }

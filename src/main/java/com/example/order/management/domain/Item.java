@@ -12,5 +12,4 @@ public class Item {
     private String desc;
 
     private int quantity;
-
 }
